@@ -169,9 +169,9 @@ public class Main {
             int i = 0;
             for (var purchase : purchases) {
                 if (i == purchases.size() - 1) {
-                    writer.write(purchase.getName() + "\n" + purchase.getPrice() + "\n" + purchase.getType().toString());
+                    writer.write(purchase.getName() + " $" + purchase.getPrice() + " #" + purchase.getType().toString());
                 } else {
-                    writer.write(purchase.getName() + "\n" + purchase.getPrice() + "\n" + purchase.getType().toString() + "\n");
+                    writer.write(purchase.getName() + " $" + purchase.getPrice() + " #" + purchase.getType().toString() + "\n");
                 }
                 i++;
             }
@@ -189,11 +189,11 @@ public class Main {
                 balance = Double.parseDouble(fileScanner.nextLine());
             }
             while (fileScanner.hasNext()) {
-                String name = fileScanner.nextLine();
-                double price = Double.parseDouble(fileScanner.nextLine());
-                PurchaseType type = PurchaseType.valueOf(fileScanner.nextLine());
+                String purchase = fileScanner.nextLine();
 
-                purchases.add(new Purchase(name, price, type));
+                purchases.add(new Purchase(purchase.substring(0, purchase.lastIndexOf("$") - 1),
+                        Double.parseDouble(purchase.substring(purchase.lastIndexOf("$") + 1, purchase.lastIndexOf(" ")))
+                        , PurchaseType.valueOf(purchase.substring(purchase.lastIndexOf("#") + 1))));
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
