@@ -293,6 +293,18 @@ files:
         }
     }
   learner_created: false
+- name: src/budget/Purchase.java
+  visible: true
+  learner_created: true
+- name: src/budget/PurchaseType.java
+  visible: true
+  learner_created: true
+- name: purchases.txt
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/7027#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Sat, 26 Mar 2022 23:22:03 UTC
 record: -1

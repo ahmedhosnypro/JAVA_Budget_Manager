@@ -1,16 +1,23 @@
 package budget;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 public class Main {
     private static final Scanner scanner = new Scanner(System.in);
+
     private static double balance = 0;
-    private static final TreeMap<String, Double> allPurchases = new TreeMap<>();
-    private static final TreeMap<String, Double> foodPurchases = new TreeMap<>();
-    private static final TreeMap<String, Double> clothesPurchases = new TreeMap<>();
-    private static final TreeMap<String, Double> entertainmentPurchases = new TreeMap<>();
-    private static final TreeMap<String, Double> otherPurchases = new TreeMap<>();
+
+    private static final ArrayList<Purchase> purchases = new ArrayList<>();
+
+    private static final String SAVE_PATH = "purchases.txt";
+    private static final File saveFile = new File(SAVE_PATH);
+
+    private static final String EMPTY_MESSAGE = "The purchase list is empty";
 
     public static void main(String[] args) {
         startAction();
@@ -24,6 +31,8 @@ public class Main {
                 2) Add purchase
                 3) Show list of purchases
                 4) Balance
+                5) Save
+                6) Load
                 0) Exit""");
 
         int action = Integer.parseInt(scanner.nextLine());
@@ -34,6 +43,8 @@ public class Main {
             case 2 -> addPurchase();
             case 3 -> showPurchases();
             case 4 -> showBalance();
+            case 5 -> save();
+            case 6 -> load();
             case 0 -> System.out.println("Bye!");
             default -> throw new IllegalArgumentException();
         }
@@ -52,7 +63,7 @@ public class Main {
 
     private static void addPurchase() {
         System.out.println("""
-                
+                                
                 Choose the type of purchase
                 1) Food
                 2) Clothes
@@ -64,37 +75,30 @@ public class Main {
         System.out.println();
 
         switch (purchaseType) {
-            case 1 -> addPurchaseUtility("Food");
-            case 2 -> addPurchaseUtility("Clothes");
-            case 3 -> addPurchaseUtility("Entertainment");
-            case 4 -> addPurchaseUtility("Other");
+            case 1 -> addPurchaseUtility(PurchaseType.FOOD);
+            case 2 -> addPurchaseUtility(PurchaseType.CLOTHES);
+            case 3 -> addPurchaseUtility(PurchaseType.ENTERTAINMENT);
+            case 4 -> addPurchaseUtility(PurchaseType.OTHER);
             case 5 -> startAction();
             default -> throw new IllegalArgumentException();
         }
     }
 
-    private static void addPurchaseUtility(String purchaseType) {
+    private static void addPurchaseUtility(PurchaseType purchaseType) {
 
         System.out.println("Enter purchase name:");
         String purchaseName = scanner.nextLine();
 
         System.out.println("Enter its price:");
-        double purchaseCost = Double.parseDouble(scanner.nextLine());
+        double purchasePrice = Double.parseDouble(scanner.nextLine());
 
-        allPurchases.put(purchaseName, purchaseCost);
-        switch (purchaseType) {
-            case "Food" -> foodPurchases.put(purchaseName, purchaseCost);
-            case "Clothes" -> clothesPurchases.put(purchaseName, purchaseCost);
-            case "Entertainment" -> entertainmentPurchases.put(purchaseName, purchaseCost);
-            case "Other" -> otherPurchases.put(purchaseName, purchaseCost);
-            default -> throw new IllegalArgumentException();
-        }
+        purchases.add(new Purchase(purchaseName, purchasePrice, purchaseType));
 
         System.out.println("Purchase was added!");
 
-        if (purchaseCost > 0) {
-            if (balance - purchaseCost > 0) {
-                balance -= purchaseCost;
+        if (purchasePrice > 0) {
+            if (balance - purchasePrice > 0) {
+                balance -= purchasePrice;
             } else {
                 balance = 0;
             }
@@ -105,7 +109,7 @@ public class Main {
 
     private static void showPurchases() {
         System.out.println("""
-                
+                                
                 Choose the type of purchases
                 1) Food
                 2) Clothes
@@ -117,38 +121,85 @@ public class Main {
         System.out.println();
 
         switch (purchaseType) {
-            case 1 -> showPurchasesUtility(foodPurchases);
-            case 2 -> showPurchasesUtility(clothesPurchases);
-            case 3 -> showPurchasesUtility(entertainmentPurchases);
-            case 4 -> showPurchasesUtility(otherPurchases);
-            case 5 -> showPurchasesUtility(allPurchases);
+            case 1 -> showPurchasesUtility(PurchaseType.FOOD);
+            case 2 -> showPurchasesUtility(PurchaseType.CLOTHES);
+            case 3 -> showPurchasesUtility(PurchaseType.ENTERTAINMENT);
+            case 4 -> showPurchasesUtility(PurchaseType.OTHER);
+            case 5 -> showAllPurchases();
             case 6 -> startAction();
             default -> throw new IllegalArgumentException();
         }
     }
 
-    private static void showPurchasesUtility(TreeMap<String, Double> purchases) {
+    private static void showPurchasesUtility(PurchaseType purchaseType) {
         if (purchases.isEmpty()) {
-            System.out.println("The purchase list is empty");
-            if (allPurchases.isEmpty()) {
-                startAction();
-            } else {
-                showPurchases();
-            }
+            System.out.println(EMPTY_MESSAGE);
+            startAction();
         } else {
-            for (var purchase : purchases.entrySet()) {
-                System.out.printf("%s: $%2f%n", purchase.getKey(), purchase.getValue());
-            }
-            System.out.printf("Total sum: $%2f%n", purchases.values().stream()
-                    .reduce(0.0, Double::sum));
+            if (purchases.stream().noneMatch(p -> p.getType().equals(purchaseType))) {
+                System.out.println(EMPTY_MESSAGE);
+            } else {
+                purchases.stream().filter(p -> p.getType().equals(purchaseType)).forEach(p -> System.out.printf("%s $%.2f%n", p.getName(), p.getPrice()));
+                System.out.printf("Total sum: $%.2f%n", purchases.stream().filter(p -> p.getType().equals(purchaseType)).mapToDouble(Purchase::getPrice).reduce(0.0, Double::sum));
 
+            }
             showPurchases();
         }
     }
 
+    private static void showAllPurchases() {
+        if (purchases.isEmpty()) {
+            System.out.println(EMPTY_MESSAGE);
+            startAction();
+        } else {
+            purchases.forEach(p -> System.out.printf("%s $%.2f%n", p.getName(), p.getPrice()));
+            System.out.printf("Total sum: $%.2f%n", purchases.stream().mapToDouble(Purchase::getPrice).reduce(0.0, Double::sum));
+        }
+        showPurchases();
+    }
 
     private static void showBalance() {
-        System.out.printf("Balance: $%2f%n", balance);
+        System.out.printf("Balance: $%.2f%n", balance);
+        startAction();
+    }
+
+    private static void save() {
+        try (FileWriter writer = new FileWriter(saveFile)) {
+            writer.write(balance + "\n");
+            int i = 0;
+            for (var purchase : purchases) {
+                if (i == purchases.size() - 1) {
+                    writer.write(purchase.getName() + "\n" + purchase.getPrice() + "\n" + purchase.getType().toString());
+                } else {
+                    writer.write(purchase.getName() + "\n" + purchase.getPrice() + "\n" + purchase.getType().toString() + "\n");
+                }
+                i++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Purchases were saved!");
+        startAction();
+    }
+
+    private static void load() {
+        try (Scanner fileScanner = new Scanner(saveFile)) {
+            if (fileScanner.hasNext()) {
+                balance = Double.parseDouble(fileScanner.nextLine());
+            }
+            while (fileScanner.hasNext()) {
+                String name = fileScanner.nextLine();
+                double price = Double.parseDouble(fileScanner.nextLine());
+                PurchaseType type = PurchaseType.valueOf(fileScanner.nextLine());
+
+                purchases.add(new Purchase(name, price, type));
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Purchases were loaded!");
         startAction();
     }
 }
